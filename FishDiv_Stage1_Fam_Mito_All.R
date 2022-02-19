@@ -3,13 +3,13 @@ require(ape)
 require(tidyverse)
 require(phytools)
 
-source("R\\my.drop.tip.R")
-source("R\\bigfish_find_xtets.R")
-source("R\\get_cherries.R")
-source("R\\phylo_halves.R")
+source("R/my.drop.tip.R")
+source("R/bigfish_find_xtets.R")
+source("R/get_cherries.R")
+source("R/phylo_halves.R")
 
 fishgenes_genera_accessions <- read.csv("fishgenes_genera_accessions_all.csv")
-fishtree <- read.tree("actinopt_12k_treePL.tre")
+fishtree <- read.tree("trees/Rabosky_actinopt_12k_treePL.tre")
 
 
 ## Remove rogue or blacklisted taxa
@@ -54,7 +54,7 @@ fish2.fam.with.mito.all.tree$tip.label <- sapply(fish2.fam.with.mito.all.tree$ti
 
 fish2.fam.with.mito.all.pairs <- get.cherries(fish2.fam.with.mito.all.tree)
 
-## Extract all members of sister pairs with available sequence
+## Extract all members of sister pairs with available sequence.
 
 fish2.fam.with.mito.all.pairclades.seq <- sapply(
   fish2.fam.with.mito.all.pairs, 
@@ -65,6 +65,8 @@ fish2.fam.with.mito.all.pairclades.seq <- sapply(
                                           pull (Species), " ", "_")
                         ), 
   simplify = F)
+
+
 
 ## Extract all available members of sister pairs
 
@@ -142,7 +144,7 @@ fish2.fam.with.mito.all.accspairs.t2$quartet_str <- sapply(
 
 ## Write accessions/pairs table
 
-write.csv(fish2.fam.with.mito.all.accspairs.t2, "outputs\\Accessions_pairs_tables\\Fam_with_Mito_All_AccsPairsTable.csv")
+write.csv(fish2.fam.with.mito.all.accspairs.t2, "outputs/Stage1_Accessions_pairs_tables/Fam_with_Mito_All_AccsPairsTable.csv")
 
 ## Gather and write sequences
 
@@ -152,13 +154,13 @@ fish2.fam.with.mito.all.COI.seqs <- read.GenBank(fish2.fam.with.mito.all.accspai
 fish2.fam.with.mito.all.CYTB.seqs <- read.GenBank(fish2.fam.with.mito.all.accspairs.t$CYTB.acc)
 
 write.FASTA(fish2.fam.with.mito.all.12S.seqs, 
-            "alignments\\raw_seqs\\fish2_fam_with_mito_all_12s.fasta")
+            "alignments/raw_sequence/fish2_fam_with_mito_all_12s.fasta")
 write.FASTA(fish2.fam.with.mito.all.16S.seqs, 
-            "alignments\\raw_seqs\\fish2_fam_with_mito_all_16s.fasta")
+            "alignments/raw_sequence/fish2_fam_with_mito_all_16s.fasta")
 write.FASTA(fish2.fam.with.mito.all.COI.seqs, 
-            "alignments\\fish2_fam_with_mito_all_COI.fasta")
+            "alignments/raw_sequence/fish2_fam_with_mito_all_COI.fasta")
 write.FASTA(fish2.fam.with.mito.all.CYTB.seqs, 
-            "alignments\\fish2_fam_with_mito_all_CYTB.fasta")
+            "alignments/raw_sequence/fish2_fam_with_mito_all_CYTB.fasta")
 
 ## Steps for Stage 2:
 

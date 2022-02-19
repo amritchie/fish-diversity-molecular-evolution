@@ -3,13 +3,14 @@ require(ape)
 require(tidyverse)
 require(phytools)
 
-source("R\\my.drop.tip.R")
-source("R\\bigfish_find_xtets.R")
-source("R\\get_cherries.R")
-source("R\\phylo_halves.R")
+source("R/my.drop.tip.R")
+source("R/bigfish_find_xtets.R")
+source("R/get_cherries.R")
+source("R/phylo_halves.R")
+source("R/my_read_genbank.R")
 
 fishgenes_genera_accessions <- read.csv("fishgenes_genera_accessions_all.csv")
-fishtree <- read.tree("actinopt_12k_treePL.tre")
+fishtree <- read.tree("trees/Rabosky_actinopt_12k_treePL.tre")
 
 
 ## Remove rogue or blacklisted taxa
@@ -31,7 +32,7 @@ fish2.spp.with.nuc.all <- fish2.with.nuc.all %>%
 
 fish2.fam.with.nuc.all <- fish2.with.nuc.all %>% 
   group_by(family) %>% 
-  summarise(NUC = any(!is.naRAG1.acc & RAG1.acc != "")) %>% 
+  summarise(NUC = any(!is.na(RAG1.acc) & RAG1.acc != "")) %>% 
   filter(NUC) %>% 
   pull(family)
 
@@ -145,14 +146,43 @@ fish2.fam.with.nuc.all.accspairs.t2$quartet_str <- sapply(
 
 ## Write accessions/pairs table
 
-write.csv(fish2.fam.with.nuc.all.accspairs.t2, "outputs\\Accessions_pairs_tables\\Fam_with_Nuc_All_AccsPairsTable.csv")
+write.csv(fish2.fam.with.nuc.all.accspairs.t2, "outputs/Stage1_Accessions_pairs_tables/Fam_with_Nuc_All_AccsPairsTable.csv")
 
-## Gather and write sequences
+## Gather and write sequences.
 
-fish2.fam.with.nuc.all.RAG1.seqs <- read.GenBank(fish2.fam.with.nuc.all.accspairs.t$RAG1.acc)
 
-write.FASTA(fish2.fam.with.nuc.all.RAG1.seqs, 
-            "alignments\\fish2_fam_with_nuc_all_RAG1.fasta")
+## 'New Data' entries from Rabosky et al. 2018)
+fish2.fam.with.nuc.all.newdata <- read.FASTA("alignments/newdata/fish2_fam_with_nuc_accspairs_t_newdata.fasta")
+
+fish2.fam.with.nuc.all.RAG1.gb.seqs <- my.read.GenBank(
+  fish2.fam.with.nuc.all.accspairs.t2$RAG1.acc[sapply(fish2.fam.with.nuc.all.accspairs.t2$RAG1.acc,
+                                                    function (x) ifelse(str_detect(x, "New data"), F, T))])
+
+fish2.fam.with.nuc.all.RAG1.gb.seqnames <- fish2.fam.with.nuc.all.accspairs.t2$Species[sapply(
+  fish2.fam.with.nuc.all.accspairs.t2$RAG1.acc, 
+  function (x) ifelse(str_detect(x, "New data"), F, T))]
+
+fish2.fam.with.nuc.all.RAG1.seqs <- sapply(
+  sapply(
+    1:length(fish2.fam.with.nuc.all.accspairs.t2$RAG1.acc), 
+    function (x) ifelse(str_detect(fish2.fam.with.nuc.all.accspairs.t2$RAG1.acc[x], "New data"), 
+                        list(fish2.fam.with.nuc.all.newdata[str_replace_all(fish2.fam.with.nuc.all.accspairs.t2[x, "Species"], " ", "_")]),
+                        list(fish2.fam.with.nuc.all.RAG1.gb.seqs[fish2.fam.with.nuc.all.RAG1.gb.seqnames == fish2.fam.with.nuc.all.accspairs.t2[x, "Species"]])), 
+    simplify = F), function (x) x[1])
+
+fish2.fam.with.nuc.all.RAG1.DNAbin <- fish2.fam.with.nuc.all.RAG1.seqs[[1]]
+
+for (i in 2:length(fish2.fam.with.nuc.all.RAG1.seqs)) 
+{
+  if (length(fish2.fam.with.nuc.all.RAG1.seqs[[i]][[1]]) > 0) 
+  {
+    fish2.fam.with.nuc.all.RAG1.DNAbin <- c(fish2.fam.with.nuc.all.RAG1.DNAbin, 
+                                            fish2.fam.with.nuc.all.RAG1.seqs[[i]])
+  }
+}
+
+write.FASTA(fish2.fam.with.nuc.all.RAG1.DNAbin, 
+            "alignments/raw_sequence/fish2_fam_with_nuc_all_RAG1.fasta")
 
 ## Steps for Stage 2:
 

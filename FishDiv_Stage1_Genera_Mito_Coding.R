@@ -3,13 +3,14 @@ require(ape)
 require(tidyverse)
 require(phytools)
 
-source("R\\my.drop.tip.R")
-source("R\\bigfish_find_xtets.R")
-source("R\\get_cherries.R")
-source("R\\phylo_halves.R")
+source("R/my.drop.tip.R")
+source("R/bigfish_find_xtets.R")
+source("R/get_cherries.R")
+source("R/phylo_halves.R")
+source("R/my_read_genbank.R")
 
 fishgenes_genera_accessions <- read.csv("fishgenes_genera_accessions_all.csv")
-fishtree <- read.tree("actinopt_12k_treePL.tre")
+fishtree <- read.tree("trees/Rabosky_actinopt_12k_treePL.tre")
 
 
 ## Remove rogue or blacklisted taxa
@@ -38,7 +39,7 @@ fish2.genera.with.mito.coding <- fish2.with.mito.coding %>%
 
 fish2.genera.with.mito.coding.tree <- keep.tip(fishtree, 
                                             fishgenes_genera_accessions %>% filter(TaxonRemoved == "In Tree", 
-                                                                                   family %in% fish2.genera.with.mito.coding) %>% 
+                                                                                   genus %in% fish2.genera.with.mito.coding) %>% 
                                               mutate(our_name = str_replace_all(Species, " ", "_")) %>% group_by(genus) %>% 
                                               summarise(our_name = first(our_name)) %>% 
                                               pull(our_name))
@@ -66,6 +67,12 @@ fish2.genera.with.mito.coding.pairclades.seq <- sapply(
   ), 
   simplify = F)
 
+fish2.genera.with.mito.coding.pairclades.seq.nodup <- fish2.genera.with.mito.coding.pairclades.seq[!sapply(
+  fish2.genera.with.mito.coding.pairclades.seq, 
+  function (x) length(intersect(str_split(phylo.firsthalf(x)$tip.label, "_")[[1]], 
+                                str_split(phylo.secondhalf(x)$tip.label, "_")[[1]])) > 0
+)]
+
 ## Extract all available members of sister pairs
 
 fish2.genera.with.mito.coding.pairclades.all <- sapply(
@@ -80,10 +87,16 @@ fish2.genera.with.mito.coding.pairclades.all <- sapply(
   ), 
   simplify = F)
 
+fish2.genera.with.mito.coding.pairclades.all.nodup <- fish2.genera.with.mito.coding.pairclades.all[!sapply(
+  fish2.genera.with.mito.coding.pairclades.seq, 
+  function (x) length(intersect(str_split(phylo.firsthalf(x)$tip.label, "_")[[1]], 
+                                str_split(phylo.secondhalf(x)$tip.label, "_")[[1]])) > 0
+)]
+
 ## Node density effect compensation - randomly sample down larger sister clade so that sequence numbers are even
 
 fish2.genera.with.mito.coding.pairclades.sampled <- sapply(
-  fish2.genera.with.mito.coding.pairclades.seq, 
+  fish2.genera.with.mito.coding.pairclades.seq.nodup, 
   phylo.sample.even, 
   simplify = F
 )
@@ -144,17 +157,17 @@ fish2.genera.with.mito.coding.accspairs.t2$quartet_str <- sapply(
 
 ## Write accessions/pairs table
 
-write.csv(fish2.genera.with.mito.coding.accspairs.t2, "outputs\\Accessions_pairs_tables\\Genera_with_Mito_Coding_AccsPairsTable.csv")
+write.csv(fish2.genera.with.mito.coding.accspairs.t2, "outputs/Stage1_Accessions_pairs_tables/Genera_with_Mito_Coding_AccsPairsTable.csv")
 
 ## Gather and write sequences
 
-fish2.genera.with.mito.coding.COI.seqs <- read.GenBank(fish2.genera.with.mito.goding.accspairs.t$COI.acc)
-fish2.genera.with.mito.coding.CYTB.seqs <- read.GenBank(fish2.genera.with.mito.coding.accspairs.t$CYTB.acc)
+fish2.genera.with.mito.coding.COI.seqs <- my.read.GenBank(fish2.genera.with.mito.coding.accspairs.t$COI.acc)
+fish2.genera.with.mito.coding.CYTB.seqs <- my.read.GenBank(fish2.genera.with.mito.coding.accspairs.t$CYTB.acc)
 
 write.FASTA(fish2.genera.with.mito.coding.COI.seqs, 
-            "alignments\\fish2_genera_with_mito_coding_COI.fasta")
+            "alignments/raw_sequence/fish2_genera_with_mito_coding_COI.fasta")
 write.FASTA(fish2.genera.with.mito.coding.CYTB.seqs, 
-            "alignments\\fish2_genera_with_mito_coding_CYTB.fasta")
+            "alignments/raw_sequence/fish2_genera_with_mito_coding_CYTB.fasta")
 
 ## Steps for Stage 2:
 

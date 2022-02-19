@@ -1,17 +1,18 @@
+## STAGE 3 - Data analysis and final outputs
 
-fam.mito.all.ata.lm <- read.csv(fam.mito.all.ata.out,"outputs\\Fam_Mito_All_Output.csv")
-fam.nuc.all.ata.lm <- read.csv(fam.nuc.all.ata.out,"outputs\\Fam_Nuc_RAG1_Total_Output.csv")
-genera.mito.all.ata.lm <- read.csv(genera.mito.all.ata.out,"outputs\\Genera_Mito_All_Output.csv")
-genera.nuc.all.ata.lm <- read.csv(genera.mito.all.ata.out,"outputs\\Genera_Mito_All_Output.csv")
+fam.mito.all.ata.lm <- read.csv("outputs/Fam_Mito_All_Output.csv")
+fam.nuc.all.ata.lm <- read.csv("outputs/Fam_Nuc_RAG1_Total_Output.csv")
+genera.mito.all.ata.lm <- read.csv("outputs/Genera_Mito_All_Output.csv")
+genera.nuc.all.ata.lm <- read.csv("outputs/Genera_Nuc_RAG1_Total_Output.csv")
 
-fam.mito.coding.dS.ata.lm <- read.csv(fam.mito.coding.dS.ata.out,"outputs\\Fam_Mito_Coding_dS_Output.csv")
-fam.mito.coding.dN.ata.lm <- read.csv(fam.mito.coding.dN.ata.out,"outputs\\Fam_Mito_Coding_dN_Output.csv")
-fam.nuc.all.dS.ata.lm <- read.csv(fam.nuc.all.dS.ata.out,"outputs\\Fam_Nuc_RAG1_dS_Output.csv")
-fam.nuc.all.dN.ata.lm <- read.csv(fam.nuc.all.dN.ata.out,"outputs\\Fam_Nuc_RAG1_dN_Output.csv")
-genera.mito.coding.dS.ata.out <- read.csv(genera.mito.coding.dS.ata.out,"outputs\\Genera_Mito_Coding_dS_Output.csv")
-genera.mito.coding.dN.ata.out <- read.csv(genera.mito.coding.dN.ata.out,"outputs\\Genera_Mito_Coding_dN_Output.csv")
-genera.nuc.all.dS.ata.out <- read.csv(genera.nuc.all.dS.ata.out,"outputs\\Genera_Nuc_RAG1_dS_Output.csv")
-genera.nuc.all.dN.ata.out <- read.csv(genera.nuc.all.dN.ata.out,"outputs\\Genera_Nuc_RAG1_dN_Output.csv")
+fam.mito.coding.dS.ata.lm <- read.csv("outputs/Fam_Mito_Coding_dS_Output.csv")
+fam.mito.coding.dN.ata.lm <- read.csv("outputs/Fam_Mito_Coding_dN_Output.csv")
+fam.nuc.all.dS.ata.lm <- read.csv("outputs/Fam_Nuc_RAG1_dS_Output.csv")
+fam.nuc.all.dN.ata.lm <- read.csv("outputs/Fam_Nuc_RAG1_dN_Output.csv")
+genera.mito.coding.dS.ata.out <- read.csv("outputs/Genera_Mito_Coding_dS_Output.csv")
+genera.mito.coding.dN.ata.out <- read.csv("outputs/Genera_Mito_Coding_dN_Output.csv")
+genera.nuc.all.dS.ata.out <- read.csv("outputs/Genera_Nuc_RAG1_dS_Output.csv")
+genera.nuc.all.dN.ata.out <- read.csv("outputs/Genera_Nuc_RAG1_dN_Output.csv")
 
 # Conduct regressions
 fam.mito.all.ata.lm <- summary(lm(fam.mito.all.ata.out, formula = N_spp_ata_std ~ Blen_ata_std-1))$coefficient
@@ -73,3 +74,4 @@ fish2.ata.lms.out.t$NumPairs <- fish2.ata.pairnums
 
 fish2.ata.lms.out.t <- fish2.ata.lms.out.t  %>% select(Rank,Sequence,SubstitutionType,Estimate,"Std. Error",
                                                        "t value", "Pr(>|t|)", NumPairs)
+write.csv(fish2.ata.lms.out.t , "outputs/FishDiv_LinearModels_Output_Final.csv")

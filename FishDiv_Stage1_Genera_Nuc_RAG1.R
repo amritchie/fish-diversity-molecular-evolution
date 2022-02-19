@@ -3,13 +3,14 @@ require(ape)
 require(tidyverse)
 require(phytools)
 
-source("R\\my.drop.tip.R")
-source("R\\bigfish_find_xtets.R")
-source("R\\get_cherries.R")
-source("R\\phylo_halves.R")
+source("R/my.drop.tip.R")
+source("R/bigfish_find_xtets.R")
+source("R/get_cherries.R")
+source("R/phylo_halves.R")
+source("R/my_read_genbank.R")
 
 fishgenes_genera_accessions <- read.csv("fishgenes_genera_accessions_all.csv")
-fishtree <- read.tree("actinopt_12k_treePL.tre")
+fishtree <- read.tree("trees/Rabosky_actinopt_12k_treePL.tre")
 
 
 ## Remove rogue or blacklisted taxa
@@ -35,13 +36,11 @@ fish2.genera.with.nuc.all <- fish2.with.nuc.all %>%
   filter(NUC) %>% 
   pull(genus)
 
-)
-
 ## Create a tree with one tip per GENUS with sequence
 
 fish2.genera.with.nuc.all.tree <- keep.tip(fishtree, 
                                         fishgenes_genera_accessions %>% filter(TaxonRemoved == "In Tree", 
-                                                                               family %in% fish2.genera.with.nuc.all) %>% 
+                                                                               genus %in% fish2.genera.with.nuc.all) %>% 
                                           mutate(our_name = str_replace_all(Species, " ", "_")) %>% group_by(genus) %>% 
                                           summarise(our_name = first(our_name)) %>% 
                                           pull(our_name))
@@ -70,6 +69,12 @@ fish2.genera.with.nuc.all.pairclades.seq <- sapply(
   ), 
   simplify = F)
 
+fish2.genera.with.nuc.all.pairclades.seq.nodup <- fish2.genera.with.nuc.all.pairclades.seq[!sapply(
+  fish2.genera.with.nuc.all.pairclades.seq, 
+  function (x) length(intersect(str_split(phylo.firsthalf(x)$tip.label, "_")[[1]], 
+                                str_split(phylo.secondhalf(x)$tip.label, "_")[[1]])) > 0
+)]
+
 ## Extract all available members of sister pairs
 
 fish2.genera.with.nuc.all.pairclades.all <- sapply(
@@ -83,11 +88,18 @@ fish2.genera.with.nuc.all.pairclades.all <- sapply(
                              )
   ), 
   simplify = F)
+
+fish2.genera.with.nuc.all.pairclades.all.nodup <- fish2.genera.with.nuc.all.pairclades.all[!sapply(
+  fish2.genera.with.nuc.all.pairclades.seq, 
+  function (x) length(intersect(str_split(phylo.firsthalf(x)$tip.label, "_")[[1]], 
+                                str_split(phylo.secondhalf(x)$tip.label, "_")[[1]])) > 0
+)]
+
   
 ## Node density effect compensation - randomly sample down larger sister clade so that sequence numbers are even
 
 fish2.genera.with.nuc.all.pairclades.sampled <- sapply(
-  fish2.genera.with.nuc.all.pairclades.seq, 
+  fish2.genera.with.nuc.all.pairclades.seq.nodup, 
   phylo.sample.even, 
   simplify = F
 )
@@ -109,14 +121,14 @@ fish2.genera.with.nuc.all.pairtree$tip.label <- 1:Ntip(fish2.genera.with.nuc.all
 
 fish2.genera.with.nuc.all.xtets <- find.xtets.sisterpairs(fish2.genera.with.nuc.all.pairtree)
 
-fish2.genera.with.nuc.all.accspairs.t <- bind_rows(
+fish2.genera.with.nuc.all.accspairs.t2 <- bind_rows(
   sapply(1:length(fish2.genera.with.nuc.all.pairclades.sampled),  
          function (x) fishgenes_genera_accessions %>% 
            filter(Species %in% str_replace_all(
              fish2.genera.with.nuc.all.pairclades.sampled[[x]]$tip.label, "_", " ")
            ) %>% 
-           select(Species, COI.acc, CYTB.acc) %>% 
-           filter(COI.acc != "" & CYTB.acc != "") %>% 
+           select(Species, RAG1.acc) %>% 
+           filter(RAG1.acc != "") %>% 
            mutate(pair_no = x) %>%
            
            distinct(Species, .keep_all=T), simplify = F)
@@ -139,11 +151,11 @@ clade.names <- data.frame(Species = gsub("_", " ", unlist(halves)),
                             )
                           )
 
-fish2.genera.with.nuc.all.accspairs.t2 <- fish2.genera.with.nuc.all.accspairs.t %>% 
+fish2.genera.with.nuc.all.accspairs.t2 <- fish2.genera.with.nuc.all.accspairs.t2 %>% 
   left_join(clade.names, by="Species")
 
 fish2.genera.with.nuc.all.accspairs.t2$quartet_str <- sapply(
-  fish2.genera.with.nuc.all.accspairs.t$pair_no, 
+  fish2.genera.with.nuc.all.accspairs.t2$pair_no, 
   function (x) paste(which(sapply(fish2.genera.with.nuc.all.xtets, 
                                   function (y) x %in% y)
   ), collapse=" ")
@@ -152,14 +164,46 @@ fish2.genera.with.nuc.all.accspairs.t2$quartet_str <- sapply(
 
 ## Write accessions/pairs table
 
-write.csv(fish2.genera.with.nuc.all.accspairs.t2, "outputs\\Accessions_pairs_tables\\Genera_with_Nuc_All_AccsPairsTable.csv")
+write.csv(fish2.genera.with.nuc.all.accspairs.t2, "outputs/Stage1_Accessions_pairs_tables/Genera_with_Nuc_All_AccsPairsTable.csv")
 
 ## Gather and write sequences
 
-fish2.genera.with.nuc.all.RAG1.seqs <- read.GenBank(fish2.genera.with.nuc.all.accspairs.t$RAG1.acc)
 
-write.FASTA(fish2.genera.with.nuc.all.RAG1.seqs, 
-            "alignments\\fish2_genera_with_nuc_all_RAG1.fasta")
+## 'New Data' entries from Rabosky et al. 2018)
+
+fish2.genera.with.nuc.all.newdata <- read.FASTA("alignments/newdata/fish2_genera_with_nuc_accspairs_t_newdata.fasta")
+
+fish2.genera.with.nuc.all.RAG1.gb.seqs <- my.read.GenBank(
+  fish2.genera.with.nuc.all.accspairs.t2$RAG1.acc[sapply(fish2.genera.with.nuc.all.accspairs.t2$RAG1.acc,
+                                                      function (x) ifelse(str_detect(x, "New data"), F, T))])
+
+fish2.genera.with.nuc.all.RAG1.gb.seqnames <- fish2.genera.with.nuc.all.accspairs.t2$Species[sapply(
+  fish2.genera.with.nuc.all.accspairs.t2$RAG1.acc, 
+  function (x) ifelse(str_detect(x, "New data"), F, T))]
+
+fish2.genera.with.nuc.all.RAG1.seqs <- sapply(
+  sapply(
+    1:length(fish2.genera.with.nuc.all.accspairs.t2$RAG1.acc), 
+    function (x) ifelse(str_detect(fish2.genera.with.nuc.all.accspairs.t2$RAG1.acc[x], "New data"), 
+                        list(fish2.genera.with.nuc.all.newdata[str_replace_all(fish2.genera.with.nuc.all.accspairs.t2[x, "Species"], " ", "_")]),
+                        list(fish2.genera.with.nuc.all.RAG1.gb.seqs[fish2.genera.with.nuc.all.RAG1.gb.seqnames == fish2.genera.with.nuc.all.accspairs.t2[x, "Species"]])), 
+    simplify = F), function (x) x[1])
+
+fish2.genera.with.nuc.all.RAG1.DNAbin <- fish2.genera.with.nuc.all.RAG1.seqs[[1]]
+
+for (i in 2:length(fish2.genera.with.nuc.all.RAG1.seqs)) 
+{
+  if (length(fish2.genera.with.nuc.all.RAG1.seqs[[i]][[1]]) > 0) 
+  {
+    fish2.genera.with.nuc.all.RAG1.DNAbin <- c(fish2.genera.with.nuc.all.RAG1.DNAbin, 
+                                            fish2.genera.with.nuc.all.RAG1.seqs[[i]])
+  }
+}
+
+write.FASTA(fish2.genera.with.nuc.all.RAG1.DNAbin, 
+            "alignments/raw_sequence/fish2_genera_with_nuc_all_RAG1.fasta")
+
+
 
 ## Steps for Stage 2:
 

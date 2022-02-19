@@ -3,13 +3,14 @@ require(ape)
 require(tidyverse)
 require(phytools)
 
-source("R\\my.drop.tip.R")
-source("R\\bigfish_find_xtets.R")
-source("R\\get_cherries.R")
-source("R\\phylo_halves.R")
+source("R/my.drop.tip.R")
+source("R/bigfish_find_xtets.R")
+source("R/get_cherries.R")
+source("R/phylo_halves.R")
+source("R/my_read_genbank.R")
 
 fishgenes_genera_accessions <- read.csv("fishgenes_genera_accessions_all.csv")
-fishtree <- read.tree("actinopt_12k_treePL.tre")
+fishtree <- read.tree("trees/Rabosky_actinopt_12k_treePL.tre")
 
 
 ## Remove rogue or blacklisted taxa
@@ -144,17 +145,17 @@ fish2.fam.with.mito.coding.accspairs.t2$quartet_str <- sapply(
 
 ## Write accessions/pairs table
 
-write.csv(fish2.fam.with.mito.coding.accspairs.t2, "outputs\\Accessions_pairs_tables\\Fam_with_Mito_Coding_AccsPairsTable.csv")
+write.csv(fish2.fam.with.mito.coding.accspairs.t2, "outputs/Stage1_Accessions_pairs_tables/Fam_with_Mito_Coding_AccsPairsTable.csv")
 
 ## Gather and write sequences
 
-fish2.fam.with.mito.coding.COI.seqs <- read.GenBank(fish2.fam.with.mito.coding.accspairs.t$COI.acc)
-fish2.fam.with.mito.coding.CYTB.seqs <- read.GenBank(fish2.fam.with.mito.coding.accspairs.t$CYTB.acc)
+fish2.fam.with.mito.coding.COI.seqs <- my.read.GenBank(fish2.fam.with.mito.coding.accspairs.t$COI.acc)
+fish2.fam.with.mito.coding.CYTB.seqs <- my.read.GenBank(fish2.fam.with.mito.coding.accspairs.t$CYTB.acc)
 
 write.FASTA(fish2.fam.with.mito.all.COI.seqs, 
-            "alignments\\fish2_fam_with_mito_coding_COI.fasta")
+            "alignments/raw_sequence/fish2_fam_with_mito_coding_COI.fasta")
 write.FASTA(fish2.fam.with.mito.all.CYTB.seqs, 
-            "alignments\\fish2_fam_with_mito_coding_CYTB.fasta")
+            "alignments/raw_sequence/fish2_fam_with_mito_coding_CYTB.fasta")
 
 ## Steps for Stage 2:
 

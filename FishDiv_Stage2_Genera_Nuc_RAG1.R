@@ -4,16 +4,33 @@ library(fs)
 library(foreach)
 library(doParallel)
 
-source("R\\FishDiv_Analyse_Pair_Data.R")
-source("R\\baseml_extract_tree.R")
-source("R\\phylo_average_blen.R")
+source("R/FishDiv_Analyse_Pair_Data.R")
+source("R/baseml.extract.tree.R")
+source("R/phylo.average.brlen.R")
+source("R/ordered.ls.dir.R")
+source("R/ordered.ls.dir.R")
+source("R/welch_test.R")
 
 fishgenes_genera_accessions <- read.csv("fishgenes_genera_accessions_all.csv")
-rabosky.ata.trees <- read.tree("trees\\Rabosky_actinopt_full.trees")
-genera.nuc.all.accspairs.t2 <- read.csv("outputs\\Accessions_pairs_tables\\Genera_with_Nuc_RAG1_AccsPairsTable.csv")
+rabosky.ata.trees <- read.tree("trees/Rabosky_actinopt_full.trees")
+genera.nuc.all.accspairs.t2 <- read.csv("outputs/Stage2_Accessions_pairs_tables/fish2_genera_with_nuc_accspairs_t_2.csv", stringsAsFactors = F)
+genera.nuc.all.pairclades.all.nodup <- sapply(
+  ordered.ls.dir("trees/Stage2_pair_trees/pairclades_all_species/Genera_with_nuc/", 
+                 regexp=".*tre$"), 
+  read.tree, 
+  simplify=F
+)
 
-genera.nuc.all.baseml.trees <- sapply(ordered.ls.dir("outputs\\PAML_output\\Genera_Nuc_RAG1\\baseml", regexp = ".*txt"), baseml.extract.tree, simplify = F)
-genera.nuc.all.codeml.trees <- sapply(ordered.ls.dir("outputs\\PAML_output\\Genera_Nuc_RAG1\\codeml", regexp = ".*txt"), codeml.extract.tree, simplify = F)
+genera.nuc.all.pairclades.sampled <- sapply(
+  ordered.ls.dir("trees/Stage2_pair_trees/pairclades_sampled/Genera_with_nuc/", 
+                 regexp=".*tre$"), 
+  read.tree, 
+  simplify=F
+)
+
+
+genera.nuc.all.baseml.trees <- sapply(ordered.ls.dir("outputs/PAML_output/Genera_Nuc_RAG1/baseml", regexp = ".*txt"), baseml.extract.tree, simplify = F)
+genera.nuc.all.codeml.trees <- sapply(ordered.ls.dir("outputs/PAML_output/Genera_Nuc_RAG1/codeml", regexp = ".*txt"), codeml.extract.trees, simplify = F)
 
 genera.nuc.all.out <- fishdiv.analyse.pair.data(genera.nuc.all.accspairs.t2, 
 												fishgenes_genera_accessions, 
@@ -43,25 +60,35 @@ genera.nuc.all.dN.out <- fishdiv.analyse.pair.data(genera.nuc.all.accspairs.t2,
 # genera.nuc.all.dS.pairs.ata <- foreach(x=1:(dim(genera.nuc.all.dS.out)[1]), .packages="ape") %dopar% {sapply(rabosky.ata.trees, function(tr) sapply(c(phylo.firsthalf, phylo.secondhalf), function (f) f(my.extract.clade(phy=tr, node=my.getMRCA(tr, genera.nuc.all.pairclades.sampled[[genera.nuc.all.dS.out$Pair[x]]]$tip.label)))$tip.label, simplify = F), simplify = F)}
 # genera.nuc.all.dN.pairs.ata <- foreach(x=1:(dim(genera.nuc.all.dN.out)[1]), .packages="ape") %dopar% {sapply(rabosky.ata.trees, function(tr) sapply(c(phylo.firsthalf, phylo.secondhalf), function (f) f(my.extract.clade(phy=tr, node=my.getMRCA(tr, genera.nuc.all.pairclades.sampled[[genera.nuc.all.dN.out$Pair[x]]]$tip.label)))$tip.label, simplify = F), simplify = F)}
 
+load("ata_tree_pairs_prebaked/tmp_ata_pairs_welch/fish2_genera_with_nuc_pairs_ata")
+load("ata_tree_pairs_prebaked/tmp_ata_pairs_welch/fish2_genera_with_nuc_dS_pairs_ata")
+load("ata_tree_pairs_prebaked/tmp_ata_pairs_welch/fish2_genera_with_nuc_dN_pairs_ata")
+
+# If using monophyly filter:
+# load("ata_tree_pairs_prebaked/tmp_ata_pairs_mono_welch/fish2_genera_with_nuc_pairs_ata")
+# load("ata_tree_pairs_prebaked/tmp_ata_pairs_mono_welch/fish2_genera_with_nuc_dS_pairs_ata")
+# load("ata_tree_pairs_prebaked/tmp_ata_pairs_mono_welch/fish2_genera_with_nuc_dN_pairs_ata")
+
 ## Orientation of sister clades in ATA trees is not guaranteed
 genera.nuc.all.pairs.ata.sorted <- sapply(1:(dim(genera.nuc.all.out)[1]), 
-											function (x) sapply(genera.nuc.all.pairs.ata[[x]], 
+											function (x) sapply(fish2.genera.with.nuc.pairs.ata[[x]], 
 																function (y) if(length(intersect(y[[1]], phylo.firsthalf(genera.nuc.all.pairclades.sampled[[genera.nuc.all.out$Pair[x]]])$tip.label)) > 0) y else (rev(y)), 
 																simplify = F), 
 											simplify = F
 										)
 genera.nuc.all.dS.pairs.ata.sorted <- sapply(1:(dim(genera.nuc.all.dS.out)[1]), 
-												function (x) sapply(genera.nuc.all.dS.pairs.ata[[x]], 
+												function (x) sapply(fish2.genera.with.nuc.dS.pairs.ata[[x]], 
 																	function (y) if(length(intersect(y[[1]], phylo.firsthalf(genera.nuc.all.pairclades.sampled[[genera.nuc.all.dS.out$Pair[x]]])$tip.label)) > 0) y else (rev(y)),
 																	simplify = F), 
 												simplify = F
 											)
 genera.nuc.all.dN.pairs.ata.sorted <- sapply(1:(dim(genera.nuc.all.dN.out)[1]), 
-												function (x) sapply(genera.nuc.all.dN.pairs.ata[[x]], 
+												function (x) sapply(fish2.genera.with.nuc.dN.pairs.ata[[x]], 
 																	function (y) if(length(intersect(y[[1]], phylo.firsthalf(genera.nuc.all.pairclades.sampled[[genera.nuc.all.dN.out$Pair[x]]])$tip.label)) > 0) y else (rev(y)),
 																	simplify = F), 
 												simplify = F
 											)
+
 
 ## Get clade sizes as average species numbers across ATA trees
 genera.nuc.all.nspp.ata.sorted <- sapply(genera.nuc.all.pairs.ata.sorted, 
@@ -72,28 +99,40 @@ genera.nuc.all.dN.nspp.ata.sorted <- sapply(genera.nuc.all.dN.pairs.ata.sorted,
 											function (x) apply(sapply(x, function (y) c(length(y[[1]]), length(y[[2]]))), 1, mean))
 
 ## Format final data sets with substitutions and clade sizes
+## NO MONOPHYLY FILTER
 genera.nuc.all.ata.out <- genera.nuc.all.out %>% 
 							ungroup() %>% 
-							mutate(N_spp_ata_first = transfunc.genera(genera.nuc.all.nspp.ata.sorted[1,]), N_spp_ata_last = transfunc.genera(genera.nuc.all.nspp.ata.sorted[2,])) %>% 
+							mutate(N_spp_ata_first = log(genera.nuc.all.nspp.ata.sorted[1,]), N_spp_ata_last = log(genera.nuc.all.nspp.ata.sorted[2,])) %>% 
 							mutate(swap_ata = sign(N_spp_ata_first - N_spp_ata_last)) %>% 
 							mutate(N_spp_ata_diff = abs(N_spp_ata_first - N_spp_ata_last), Blen_ata_diff = swap_ata*(Blen_first - Blen_last)) %>%
 							mutate(N_spp_ata_std = N_spp_ata_diff/sqrt(Age_first), Blen_ata_std = Blen_ata_diff/sqrt(Age_first)) %>% 
 							filter(N_spp_ata_std > 0)
 genera.nuc.all.dS.ata.out <- genera.nuc.all.dS.out %>% 
 								ungroup() %>% 
-								mutate(N_spp_ata_first = transfunc.genera(genera.nuc.all.dS.nspp.ata.sorted[1,]), N_spp_ata_last = transfunc.genera(genera.nuc.all.dS.nspp.ata.sorted[2,])) %>% 
+								mutate(N_spp_ata_first = log(genera.nuc.all.dS.nspp.ata.sorted[1,]), N_spp_ata_last = log(genera.nuc.all.dS.nspp.ata.sorted[2,])) %>% 
 								mutate(swap_ata = sign(N_spp_ata_first - N_spp_ata_last)) %>% 
 								mutate(N_spp_ata_diff = abs(N_spp_ata_first - N_spp_ata_last), Blen_ata_diff = swap_ata*(Blen_first - Blen_last)) %>%
 								mutate(N_spp_ata_std = N_spp_ata_diff/sqrt(Age_first), Blen_ata_std = Blen_ata_diff/sqrt(Age_first))  %>% 
 								filter(N_spp_ata_std > 0)
 genera.nuc.all.dN.ata.out <- genera.nuc.all.dN.out %>% 
 								ungroup() %>% 
-								mutate(N_spp_ata_first = transfunc.genera(genera.nuc.all.dN.nspp.ata.sorted[1,]), N_spp_ata_last = transfunc.genera(genera.nuc.all.dN.nspp.ata.sorted[2,])) %>% 
+								mutate(N_spp_ata_first = log(genera.nuc.all.dN.nspp.ata.sorted[1,]), N_spp_ata_last = log(genera.nuc.all.dN.nspp.ata.sorted[2,])) %>% 
 								mutate(swap_ata = sign(N_spp_ata_first - N_spp_ata_last)) %>% 
 								mutate(N_spp_ata_diff = abs(N_spp_ata_first - N_spp_ata_last), Blen_ata_diff = swap_ata*(Blen_first - Blen_last)) %>%
 								mutate(N_spp_ata_std = N_spp_ata_diff/sqrt(Age_first), Blen_ata_std = Blen_ata_diff/sqrt(Age_first))  %>% 
 								filter(N_spp_ata_std > 0)
 
-write.csv(genera.nuc.all.ata.out,"outputs\\Genera_Nuc_RAG1_Total_Output.csv")
-write.csv(genera.nuc.all.dS.ata.out,"outputs\\Genera_Nuc_RAG1_dS_Output.csv")
-write.csv(genera.nuc.all.dN.ata.out,"outputs\\Genera_Nuc_RAG1_dN_Output.csv")
+## MONOPHYLY FILTER - run this code instead of the above
+# genera.nuc.all.nonmono.pairs.ata <- sapply(genera.nuc.all.pairs.ata.sorted, function (x) sum(sapply(x, function (y) length(intersect(str_extract(y[[1]], "^.*_"), str_extract(y[[2]], "^.*_"))) > 0)) > 20)
+# genera.nuc.all.dS.nonmono.pairs.ata <- sapply(genera.nuc.all.dS.pairs.ata.sorted, function (x) sum(sapply(x, function (y) length(intersect(str_extract(y[[1]], "^.*_"), str_extract(y[[2]], "^.*_"))) > 0)) > 20)
+# genera.nuc.all.dN.nonmono.pairs.ata <- sapply(genera.nuc.all.dN.pairs.ata.sorted, function (x) sum(sapply(x, function (y) length(intersect(str_extract(y[[1]], "^.*_"), str_extract(y[[2]], "^.*_"))) > 0)) > 20)
+# 
+# genera.nuc.all.ata.out <- genera.nuc.all.out %>% ungroup() %>% mutate(N_spp_ata_first = log(genera.nuc.all.nspp.ata.sorted[1,]), N_spp_ata_last = log(genera.nuc.all.nspp.ata.sorted[2,])) %>% filter(!genera.nuc.all.nonmono.pairs.ata) %>% mutate(swap_ata = sign(N_spp_ata_first - N_spp_ata_last)) %>% mutate(N_spp_ata_diff = abs(N_spp_ata_first - N_spp_ata_last), Blen_ata_diff = swap_ata*(Blen_first - Blen_last)) %>% mutate(N_spp_ata_std = N_spp_ata_diff/sqrt(Age_first), Blen_ata_std = Blen_ata_diff/sqrt(Age_first)) %>% filter(N_spp_ata_std > 0)
+# genera.nuc.all.dS.ata.out <- genera.nuc.all.dS.out %>% ungroup() %>% mutate(N_spp_ata_first = log(genera.nuc.all.dS.nspp.ata.sorted[1,]), N_spp_ata_last = log(genera.nuc.all.dS.nspp.ata.sorted[2,])) %>% filter(!genera.nuc.all.dS.nonmono.pairs.ata) %>% mutate(swap_ata = sign(N_spp_ata_first - N_spp_ata_last)) %>% mutate(N_spp_ata_diff = abs(N_spp_ata_first - N_spp_ata_last), Blen_ata_diff = swap_ata*(Blen_first - Blen_last)) %>% mutate(N_spp_ata_std = N_spp_ata_diff/sqrt(Age_first), Blen_ata_std = Blen_ata_diff/sqrt(Age_first))  %>% filter(N_spp_ata_std > 0);
+# genera.nuc.all.dN.ata.out <- genera.nuc.all.dN.out %>% ungroup() %>% mutate(N_spp_ata_first = log(genera.nuc.all.dN.nspp.ata.sorted[1,]), N_spp_ata_last = log(genera.nuc.all.dN.nspp.ata.sorted[2,])) %>% filter(!genera.nuc.all.dN.nonmono.pairs.ata) %>% mutate(swap_ata = sign(N_spp_ata_first - N_spp_ata_last)) %>% mutate(N_spp_ata_diff = abs(N_spp_ata_first - N_spp_ata_last), Blen_ata_diff = swap_ata*(Blen_first - Blen_last)) %>% mutate(N_spp_ata_std = N_spp_ata_diff/sqrt(Age_first), Blen_ata_std = Blen_ata_diff/sqrt(Age_first))  %>% filter(N_spp_ata_std > 0);
+
+
+
+write.csv(genera.nuc.all.ata.out,"outputs/Genera_Nuc_RAG1_Total_Output.csv")
+write.csv(genera.nuc.all.dS.ata.out,"outputs/Genera_Nuc_RAG1_dS_Output.csv")
+write.csv(genera.nuc.all.dN.ata.out,"outputs/Genera_Nuc_RAG1_dN_Output.csv")
