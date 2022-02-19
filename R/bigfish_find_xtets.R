@@ -54,7 +54,7 @@ find.xtets.sisterpairs <- function (pairtree)
   out.tree$tip.label <-  sapply(pairtree$tip.label, 
                                function(x) which(sapply(final.quartets, 
                                                         function (y) x %in% y)))
-  plot(out.tree)
+  #plot(out.tree)
   
   return(final.quartets)
   
