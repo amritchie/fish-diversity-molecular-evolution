@@ -5,6 +5,6 @@ The final outputs used for analysis in the paper are in outputs/Final_sister_pai
 
 The main R code is run in three stages, which are to be sourced in order. Stage 1 produces sister pair selections and downloads molecular sequences. This results in a table of taxa linked to sequence accessions and pair assignments. Sister pairs are then manually grouped together into quartets, associated quartet-wise alignments are produced, and PAML programs are run to infer branch lengths. Alignments used in the analyses are in alignments/final_alignments. PAML outputs are in outputs/PAML_output
 
-In Stage 2, the PAML output is read, clade sizes are calculated and the final tables of sister pair comparisons are produced. 
+In Stage 2, the PAML output is read, clade sizes are calculated and the final tables of sister pair comparisons are produced. To run stage 2, the 100 all-taxon-assembled (ATA) chronograms of Rabosky et al (2018, "An inverse latitudinal gradient in speciation rate for marine fishes", Nature), must be downloaded and placed in the trees folder (https://fishtreeoflife.org/downloads/).
 .
 In Stage 3, data transformations are performed and linear models are run.
